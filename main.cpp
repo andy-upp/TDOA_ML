@@ -39,8 +39,11 @@ int main() {
     */
     // test();
     
-    MyPoint2d s_t(0.0, 0.0), s_r1(4.0, 0.0), s_r2(0.0, 4.0), s_r3(4, 4), tgt(1, 1.6);
-    MyPoint2d iter(3, 3);
+    MyPoint2d s_t(0.0, 0.0), s_r1(300.6, 860.7), s_r2(548.2, 102.0), s_r3(59, 67.5), tgt(100, 22.7);
+    MyPoint2d iter(5000.0, 6000.5);
+
+    printf("Real target: (%f, %f)\n", tgt.x, tgt.y);
+    printf("Init point: (%f, %f)\n", iter.x, iter.y);
     
     // "receivers": the list of receivers;
     // "tds": the list of time difference;
@@ -68,11 +71,15 @@ int main() {
     
     // "iteration": limit number of iteration;
     // "speed": signal travel speed;
-    int iteration = 10;
+    int iteration = 50;
     float speed = 1.0;
+
+    // "norm_limit": if the norm between two iteration results is close, we say convergence.
+    float norm_limit = 1e-10;
+    float norm_diff = dist_square(iter, tgt);
     
-    
-    while (iteration > 0) {
+    while (iteration > 0 && norm_diff > norm_limit) {
+        MyPoint2d tmp = iter;
         float grad_x = 0.0, grad_y = 0.0;
         float H_00 = 0.0, H_01 = 0.0, H_10 = 0.0, H_11 = 0.0;
         for (int i = 0; i < receivers.size(); ++i) {
@@ -100,11 +107,14 @@ int main() {
         float frac = 1/(H_00*H_11 - H_10*H_01);
         iter.x -= frac*(H_11*grad_x - H_01*grad_y);
         iter.y -= frac*(H_00*grad_y - H_10*grad_x);
+        norm_diff = dist_square(iter, tmp);
         iteration --;
     }
     
-    printf("The real target is at (%f, %f)\n", tgt.x, tgt.y);
-    printf("THe searched target is at (%f, %f)\n", iter.x, iter.y);
+    
+    printf("Found target: (%f, %f)\n", iter.x, iter.y);
+    printf("Steps: %d\n", 50-iteration);
+    printf("Distance Error: %f\n", dist_square(iter, tgt));
     
     return 0;
     

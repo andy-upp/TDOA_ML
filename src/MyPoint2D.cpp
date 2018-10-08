@@ -1,0 +1,1 @@
+class MyPoint2D:
