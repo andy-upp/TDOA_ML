@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <vector>
 #include "include/MyPoint2D.h"
+#include <cmath>
 
 using namespace std;
 
@@ -15,10 +16,9 @@ int main() {
     * "iter": the coordinate of initial point and the iteration results.
     */
     
-    test();
+    // test();
     
-    /*
-     * MyPoint2D s_t(0.0, 0.0), s_r1(300.6, 860.7), s_r2(548.2, 102.0), s_r3(59, 67.5), tgt(100, 22.7);
+    MyPoint2D s_t(0.0, 0.0), s_r1(300.6, 860.7), s_r2(548.2, 102.0), s_r3(59, 67.5), tgt(100, 22.7);
     MyPoint2D iter(105.2, 18.3);
 
     printf("Real target: (%f, %f)\n", tgt.x, tgt.y);
@@ -32,17 +32,17 @@ int main() {
     receivers.push_back(s_r2);
     receivers.push_back(s_r3);
     
-    float d_time1 = sqrt(dist_square(s_r1, tgt)) 
-                    + sqrt(dist_square(s_t, tgt))
-                    - sqrt(dist_square(s_t, s_r1));
+    float d_time1 = sqrt(s_r1.dist_square(tgt)) 
+                    + sqrt(s_t.dist_square(tgt))
+                    - sqrt(s_t.dist_square(s_r1));
                     
-    float d_time2 = sqrt(dist_square(s_r2, tgt))
-                    + sqrt(dist_square(s_t, tgt))
-                    - sqrt(dist_square(s_t, s_r2));
+    float d_time2 = sqrt(s_r2.dist_square(tgt)) 
+                    + sqrt(s_t.dist_square(tgt))
+                    - sqrt(s_t.dist_square(s_r2));
                     
-    float d_time3 = sqrt(dist_square(s_r3, tgt))
-                    + sqrt(dist_square(s_t, tgt))
-                    - sqrt(dist_square(s_t, s_r3));
+    float d_time3 = sqrt(s_r3.dist_square(tgt)) 
+                    + sqrt(s_t.dist_square(tgt))
+                    - sqrt(s_t.dist_square(s_r3));
     
     tds.push_back(d_time1);
     tds.push_back(d_time2);
@@ -55,16 +55,16 @@ int main() {
 
     // "norm_limit": if the norm between two iteration results is close, we say convergence.
     float norm_limit = 1e-6;
-    float norm_diff = dist_square(iter, tgt);
+    float norm_diff = iter.dist_square(tgt);
     
     while (iteration > 0 && norm_diff > norm_limit) {
         MyPoint2D tmp = iter;
         float grad_x = 0.0, grad_y = 0.0;
         float H_00 = 0.0, H_01 = 0.0, H_10 = 0.0, H_11 = 0.0;
         for (int i = 0; i < receivers.size(); ++i) {
-            float s2t = sqrt(dist_square(s_t, iter));
-            float r2t = sqrt(dist_square(receivers[i], iter));
-            float s2r = sqrt(dist_square(s_t, receivers[i]));
+            float s2t = sqrt(s_t.dist_square(iter));
+            float r2t = sqrt(receivers[i].dist_square(iter));
+            float s2r = sqrt(s_t.dist_square(receivers[i]));
             float memo1 = iter.x - s_t.x, memo2 = iter.x - receivers[i].x;
             float memo3 = iter.y - s_t.y, memo4 = iter.y - receivers[i].y;
             grad_x += ((s2t + r2t - tds[i] - s2r) * (memo1/s2t + memo2/r2t));
@@ -86,18 +86,14 @@ int main() {
         float frac = 1/(H_00*H_11 - H_10*H_01);
         iter.x -= frac*(H_11*grad_x - H_01*grad_y);
         iter.y -= frac*(H_00*grad_y - H_10*grad_x);
-        norm_diff = dist_square(iter, tmp);
+        norm_diff = iter.dist_square(tmp);
         iteration --;
     }
     
     
     printf("Found target: (%f, %f)\n", iter.x, iter.y);
     printf("Steps: %d\n", 50-iteration);
-    printf("Distance Error: %f\n", dist_square(iter, tgt));
-    
-    
-     * 
-     * */
+    printf("Distance Error: %f\n", iter.dist_square(tgt));
     
     return 0;
 }
@@ -106,7 +102,10 @@ int test() {
     MyPoint2D A(3.f, 5.f);
     MyPoint2D B(4.f, 3.f);
     A = A - B;
+    float a = A.dist_square(B);
     printf("%f, %f\n", A.x, A.y);
+    printf("%f\n", a);
+    return 0;
 }
 
 

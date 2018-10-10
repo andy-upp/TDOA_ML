@@ -9,8 +9,8 @@ class MyPoint2D {
 	    MyPoint2D(float, float);
 	    MyPoint2D operator+(const MyPoint2D&);
 	    MyPoint2D operator-(const MyPoint2D&);
-	    float norm(MyPoint2D);
-	    float dist_square(MyPoint2D, MyPoint2D);
+	    float norm();
+	    float dist_square(MyPoint2D);
 };
 
 #endif // MYPOINT2D_H
