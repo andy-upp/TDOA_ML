@@ -33,4 +33,5 @@ $(BIN)/Setting1.o: $(SRC)/Setting1.cpp
 # Clean Object file
 clean:
 	del $(BIN)\*.o
+	del $(TST)\*.exe
 	del *.exe
