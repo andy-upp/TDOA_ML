@@ -3,14 +3,16 @@
 
 class MyPoint2D {
 	public:
-	    float x;
-	    float y;
+	    double x;
+	    double y;
 	    MyPoint2D();
-	    MyPoint2D(float, float);
+	    MyPoint2D(double, double);
 	    MyPoint2D operator+(const MyPoint2D&);
 	    MyPoint2D operator-(const MyPoint2D&);
-	    float norm();
-	    float dist_square(MyPoint2D);
+	    double norm();
+	    double dist_square(MyPoint2D);
+	    void randomGenerate(const double&, const double&);
+	    void randomGenerate(const double&, const double&, const double&, const double&);
 };
 
 #endif // MYPOINT2D_H
