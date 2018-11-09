@@ -8,6 +8,8 @@
 using namespace std;
 
 class Setting1 {
+private:
+	double Hessian[3];
 public:
 	vector<MyPoint2D> rcvrs; //receivers
 	vector<double> timediffs;
@@ -16,6 +18,7 @@ public:
 	MyPoint2D real_tgt; // real position of target
 	double c; // signal speed
 	int iter_limit; // iteration number limit
+	int iter_times; // iteration times
 	double norm_limit; // judge when to stop the iteration
 
 	Setting1(const MyPoint2D&, const double&);
@@ -27,6 +30,8 @@ public:
 	double timeCompute(MyPoint2D&);
 	double timeCompute(MyPoint2D&, const double&);
 	MyPoint2D localize();
+	int getIterTimes();
+	double* getHessian();
 };
 
 #endif // Finsh SETTING1_H

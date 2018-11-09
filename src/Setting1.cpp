@@ -88,6 +88,9 @@ MyPoint2D Setting1::localize() {
 		H_00 *= 2;
 		H_01 *= 2;
 		H_11 *= 2;
+		Hessian[0] = H_00;
+		Hessian[1] = H_01;
+		Hessian[2] = H_11;
 		double frac = 1/(H_00*H_11 - H_01*H_01);
 		p.x -= frac*(H_11*grad_x - H_01*grad_y);
 		p.y -= frac*(H_00*grad_y - H_01*grad_x);
@@ -96,5 +99,14 @@ MyPoint2D Setting1::localize() {
 	}
 	// cout << "Iteration used: " << iter_limit - iter_id << endl;
 	// cout << "End up norm between iteration: " << norm_diff << endl;
+	iter_times = iter_limit - iter_id;
 	return p;
+}
+
+int Setting1::getIterTimes() {
+	return iter_times;
+}
+
+double* Setting1::getHessian() {
+	return Hessian;
 }

@@ -26,49 +26,7 @@ int main() {
     	cout << "MyPoint2D clear" << endl;
     }
 
-    // Test for class Setting1
-    MyPoint2D* init = new MyPoint2D(2, 2);
-    MyPoint2D* trans = new MyPoint2D(10, 10);
-    MyPoint2D tgt(-2, 0);
-
-	Setting1 setup(tgt, 1.0f);
-	setup.setTransmiter(trans);
-	setup.setInitPoint(init);
-	setup.setIterLimit(50);
-	if (setup.iter_limit != 50) {
-		cout << "iter_limit set error: " << setup.iter_limit << endl;
-	}
-
-	setup.setNormLimit(1e-06);
-
-	float d_time1 = setup.timeCompute(A);
-	float d_time2 = setup.timeCompute(B);
-	float d_time3 = setup.timeCompute(D);
-
-    setup.addReceiver(A, d_time1);
-    setup.addReceiver(B, d_time2);
-    setup.addReceiver(D, d_time3);
-
-    if (setup.real_tgt.x != -2 || setup.real_tgt.y != 0)
-		cout << "Real target set error" << endl;
-	if (setup.t.x != 10 || setup.t.y != 10)
-		cout << "Transmiter set error" << endl;
-	if (setup.p.x != 2 || setup.p.y != 2) {
-		cout << "Initial Point set error" << endl;
-		cout << setup.p.x << ", " << setup.p.y << endl;
-	}
-	if (setup.rcvrs[0].x != 5.0f || setup.rcvrs[0].y != 4.0f) {
-		cout << "Receiver add error" << endl;
-		cout << setup.rcvrs[0].x << ", " << setup.rcvrs[0].y << endl;
-	}
-	else {
-		cout << "Setting1 clear" << endl;
-	}
-
-    MyPoint2D localized_p = setup.localize();
-
-	cout << "Localized position is at " << localized_p.x 
-	<< ", " << localized_p.y << endl;
-	
+    cout << (A-B).norm() << endl;
+    
     return 0;
 }

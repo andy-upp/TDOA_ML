@@ -6,7 +6,7 @@ class MyPoint2D {
 	    double x;
 	    double y;
 	    MyPoint2D();
-	    MyPoint2D(double, double);
+	    MyPoint2D(const double, const double);
 	    MyPoint2D operator+(const MyPoint2D&);
 	    MyPoint2D operator-(const MyPoint2D&);
 	    double norm();

@@ -8,7 +8,7 @@ MyPoint2D::MyPoint2D() {
 	y = 0.f;
 }
 
-MyPoint2D::MyPoint2D(double _x, double _y) {
+MyPoint2D::MyPoint2D(const double _x, const double _y) {
 	x = _x;
 	y = _y;
 }
