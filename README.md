@@ -10,6 +10,7 @@ One important thing for Newton method is to give an appropriate initial point, b
 ## How To Use
 Clone this repo to your local device. Enter the project root directory, then in your terminal, type and enter `make main` or `make` to build the project. After the successful building, type and enter `main` or `./main` to run the program.
 To clean the .exe and .o files, type and enter `make clean`
+On Windows, using `nmake` as `make`.
 
 ## UPDATES
 - 11/29/2018
