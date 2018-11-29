@@ -15,17 +15,17 @@ using namespace std;
 
 void func_10_19();
 void func_10_26();
-void func_11_03(const string& = "line");
+void func_11_03(const string& = "line", const bool& = false);
 
 int main() {
 	
-	func_11_03();
+	func_11_03("circle", true);
 	// func_10_26();
 	
     return 0;
 }
 
-void func_11_03(const string& sensorsDistribution) {
+void func_11_03(const string& sensorsDistribution, const bool& isTest) {
 	MyPoint2D realTarget(2.0, 3.0);
 	vector<MyPoint2D> sensors;
 	srand(200);
@@ -61,72 +61,84 @@ void func_11_03(const string& sensorsDistribution) {
 	// printf("Found target at (%f, %f) \n", found.x, found.y);
 	// printf("Iteration times: %d\n", config.iterTimes);
 
-	int n_sample = 100;
-	int blocks_x = 5, blocks_y = 5;
-	double b_width = 10/blocks_x, b_height = 10/blocks_y;
-	MyPoint2D start;
-	vector<MyPoint2D> conv;
-	vector<MyPoint2D> conv_other;
-	vector<MyPoint2D> unconv_norm; // Unconverge due to bad norm
-	vector<MyPoint2D> unconv_other; // Unconverge due to converging to other point
-	for (int i = 0; i < blocks_x; ++i) {
-		for (int j = 0; j < blocks_y; ++j) {
-			for (int k = 0; k < n_sample; ++k) {
-				start.randomGenerate(i*b_width, i*b_width+b_width, 
-					j*b_height, j*b_height+b_height);
-				config.setStart(start);
-				MyPoint2D found = config.localize();
-				// cout << config.iterTimes << endl;
-				double error = sqrt(found.dist_square(realTarget))/realTarget.norm();
-				if (error > 0.1) {
-					if (config.iterTimes < iterLimit && found.norm() < 15) {
-						unconv_other.push_back(start);
-						conv_other.push_back(found);
+	if (!isTest) {
+		int n_sample = 100;
+		int blocks_x = 5, blocks_y = 5;
+		double b_width = 10/blocks_x, b_height = 10/blocks_y;
+		MyPoint2D start;
+		vector<MyPoint2D> conv; // Record starting point of converging to real target
+		vector<MyPoint2D> conv_other; // Record convergence point other than real target
+		vector<MyPoint2D> unconv_norm; // Record the diverge starting point
+		vector<MyPoint2D> unconv_other; // Record the starting point of converging to other point
+		for (int i = 0; i < blocks_x; ++i) {
+			for (int j = 0; j < blocks_y; ++j) {
+				for (int k = 0; k < n_sample; ++k) {
+					start.randomGenerate(i*b_width, i*b_width+b_width, 
+						j*b_height, j*b_height+b_height);
+					config.setStart(start);
+					MyPoint2D found = config.localize();
+					// cout << config.iterTimes << endl;
+					double error = sqrt(found.dist_square(realTarget))/realTarget.norm();
+					if (error > 0.1) {
+						if (config.iterTimes < iterLimit) {
+							// Converge to other point
+							unconv_other.push_back(start);
+							conv_other.push_back(found);
+						} else {
+							// Diverge
+							unconv_norm.push_back(start);
+						}
 					} else {
-						unconv_norm.push_back(start);
+						// Converge to real target
+						conv.push_back(start);
 					}
-				} else {
-					conv.push_back(start);
 				}
-
 			}
 		}
-	}
-	ofstream conv_record;
-	conv_record.open("py/converge.csv");
-	for (auto pp:conv) {
-		conv_record << pp.x << ", " << pp.y << endl;
-	}
-	conv_record.close();
+		ofstream conv_record;
+		conv_record.open("py/converge.csv");
+		for (auto pp:conv) {
+			conv_record << pp.x << ", " << pp.y << endl;
+		}
+		conv_record.close();
 
-	ofstream unconv_norm_record;
-	unconv_norm_record.open("py/unconv_norm.csv");
-	for (auto pp:unconv_norm) {
-		unconv_norm_record << pp.x << ", " << pp.y << endl;
-	}
-	unconv_norm_record.close();
+		ofstream unconv_norm_record;
+		unconv_norm_record.open("py/unconv_norm.csv");
+		for (auto pp:unconv_norm) {
+			unconv_norm_record << pp.x << ", " << pp.y << endl;
+		}
+		unconv_norm_record.close();
 
-	ofstream unconv_other_record;
-	unconv_other_record.open("py/unconv_other.csv");
-	for (auto pp:unconv_other) {
-		unconv_other_record << pp.x << ", " << pp.y << endl;
-	}
-	unconv_other_record.close();
+		ofstream unconv_other_record;
+		unconv_other_record.open("py/unconv_other.csv");
+		for (auto pp:unconv_other) {
+			unconv_other_record << pp.x << ", " << pp.y << endl;
+		}
+		unconv_other_record.close();
 
-	ofstream convToOtherRecord;
-	convToOtherRecord.open("py/convToOtherRecord.csv");
-	for (auto pp:conv_other) {
-		convToOtherRecord << pp.x << ", " << pp.y << endl;
-	}
-	convToOtherRecord.close();
+		ofstream convToOtherRecord;
+		convToOtherRecord.open("py/convToOtherRecord.csv");
+		for (auto pp:conv_other) {
+			convToOtherRecord << pp.x << ", " << pp.y << endl;
+		}
+		convToOtherRecord.close();
 
-	ofstream configRecord;
-	configRecord.open("py/config_record.csv");
-	configRecord << realTarget.x << ", " << realTarget.y << endl;
-	for (auto pp:sensors) {
-		configRecord << pp.x << ", " << pp.y << endl;
-	}
-	configRecord.close();
+		ofstream configRecord;
+		configRecord.open("py/config_record.csv");
+		configRecord << realTarget.x << ", " << realTarget.y << endl;
+		for (auto pp:sensors) {
+			configRecord << pp.x << ", " << pp.y << endl;
+		}
+		configRecord.close();
+    }
+    else {
+    	MyPoint2D start;
+    	srand(time(0));
+    	start.randomGenerate(5, 6);
+    	config.setStart(start);
+    	MyPoint2D found = config.locate_TR();
+    	printf("Target locked at (%f, %f)\n", found.x, found.y);
+    }
 }
 
 void func_10_19() {
