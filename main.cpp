@@ -136,7 +136,7 @@ void func_11_03(const string& sensorsDistribution, const bool& isTest) {
     	srand(time(0));
     	start.randomGenerate(5, 6);
     	config.setStart(start);
-    	MyPoint2D found = config.locate_TR();
+    	MyPoint2D found = config.locate_TR(0.25, 0.75, 0.25, 2.0, 5.0);
     	printf("Target locked at (%f, %f)\n", found.x, found.y);
     }
 }

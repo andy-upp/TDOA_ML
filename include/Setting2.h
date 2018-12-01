@@ -24,13 +24,17 @@ public:
 	MyPoint2D localize();
 	void timeCompute();
 	void setStart(MyPoint2D&);
-	double objectFunc(MyPoint2D&);
+	double objectFunc(const MyPoint2D);
+	double modelFunc(const MyPoint2D, const double&, const double&, 
+		const double&, const double&, const double&, const double&);
 	void printSensorsPosition();
 	bool isPosDef(const int&, const int&, const int&);
 	MyPoint2D cg_steihaug(const double&, const double&, const double&, 
 		const double&, const double&, const MyPoint2D&, const double&);
 	double dummy_gradient_descent(const int&, const double&, const double&);
-	MyPoint2D locate_TR();
+	MyPoint2D locate_TR(const double&, const double&, const double&, 
+		const double&, const double&);
+
 
 };
 
