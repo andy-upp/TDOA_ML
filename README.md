@@ -1,5 +1,5 @@
 # TDOA_ML
-Machine learning based optimization on TDOA localization.
+Machine learning based optimization on TDOA locating.
 
 This project is to try something interesting on TDOA localization problem. The Time Difference of Arrival(TDOA) localization is widely used in radar localization and acoustic underwater localization. Nowadays, it is also popular for localizations between robots in IoT.
 

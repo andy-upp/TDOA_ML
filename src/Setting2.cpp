@@ -13,9 +13,10 @@ void Setting2::setStart(MyPoint2D& sp) {
 	startPoint = sp;
 }
 
-void Setting2::setLimits(const int& iteration, const double& distance) {
+void Setting2::setLimits(const int& iteration, const double& distance, const double& funcVal) {
 	iterLimit = iteration;
 	distLimit = distance;
+	funcValLimit = funcVal;
 	return;
 }
 
@@ -30,6 +31,11 @@ void Setting2::timeCompute() {
 	return;
 }
 
+void Setting2::setTimeDiffs(const vector<double>& tds) {
+	timeDiffs = tds;
+	return;
+}
+
 void Setting2::printSensorsPosition() {
 	int n = sensors.size();
 	printf("Sensors number: %d\n", n);
@@ -38,10 +44,10 @@ void Setting2::printSensorsPosition() {
 	}
 }
 
-MyPoint2D Setting2::localize() {
+MyPoint2D Setting2::locate() {
 	p = startPoint;
-	printf("Start at (%f, %f)\n", p.x, p.y);
-	printf("Function value before iteration: %f\n", objectFunc(p));
+	// printf("Start at (%f, %f)\n", p.x, p.y);
+	// printf("Function value before iteration: %f\n", objectFunc(p));
 	// if (objectFunc(p) < 0.1) return p;
 	int iterId = 0;
 	double distOfTwoIter = 1;
@@ -69,7 +75,7 @@ MyPoint2D Setting2::localize() {
 		}
 		// cout << H_00 << ", " << H_01 << ", " << H_11 << endl;
 		// cout << grad_x << ", " << grad_y << ", " << endl;
-		printf("Positive Definite Hessian? : %s\n", isPosDef(H_00, H_01, H_11) ? "true" : "false");
+		// printf("Positive Definite Hessian? : %s\n", isPosDef(H_00, H_01, H_11) ? "true" : "false");
 		double frac = 1/(H_00*H_11-H_01*H_01);
 		p.x -= frac*(H_11*grad_x - H_01*grad_y);
 		p.y -= frac*(H_00*grad_y - H_01*grad_x);
@@ -77,9 +83,9 @@ MyPoint2D Setting2::localize() {
 		iterId++;
 	}
 	iterTimes = iterId;
-	printf("Iteration: %d\n", iterTimes);
-	printf("Function value after iteration: %f\n", objectFunc(p));
-	printf("-------------------------------\n");
+	// printf("Iteration: %d\n", iterTimes);
+	// printf("Function value after iteration: %f\n", objectFunc(p));
+	// printf("-------------------------------\n");
 
 	return p;
 }
@@ -95,18 +101,21 @@ MyPoint2D Setting2::locate_TR(const double& ita_s, const double& ita_v,
 	*/
 	p = startPoint; // Set the iterator p as our starting point
 	double radiusTR = 0.5*tr_upper; // Give the inital trust region radius
+	double lastFuncVal = objectFunc(p);
 
 	// Print some info
-	printf("Start at (%f, %f)\n", p.x, p.y);
-	printf("Function value before iteration: %f\n", objectFunc(p));
+	// printf("Start at (%f, %f)\n", p.x, p.y);
+	// printf("Function value before iteration: %f\n", lastFuncVal);
 
 	int iterId = 0;
 	double distOfTwoIter = 1;
+	double diffFuncVal = 1;
 	int n = sensors.size();
 	double rho = 0;
-	while (iterId < iterLimit && distOfTwoIter > distLimit) {
+	while (iterId < iterLimit && distOfTwoIter > distLimit && diffFuncVal > funcValLimit) {
 		// Save the iterator's last position
-		// MyPoint2D tmp = p;
+		MyPoint2D tmp = p;
+		iterations.push_back(tmp);
 
 		// Compute the gradient and Hessian
 		double grad_x = 0.0, grad_y = 0.0;
@@ -129,42 +138,70 @@ MyPoint2D Setting2::locate_TR(const double& ita_s, const double& ita_v,
 			H_01 += 2*(memo2*memo1-g*((xDistP_S0*yDistP_S0)/pow(distP_S0, 3.0)-(xDistP_Si*yDistP_Si)/pow(distP_Si, 3.0)));
 		}
 
+		// printf("Gradient: (%f, %f)\n", grad_x, grad_y);
+		// printf("Hessian: \n[[%f, %f],\n [%f, %f]]\n", H_00, H_01, H_01, H_11);
+
+		// Modify the Hessian
+		double eigen1 = ((H_00 + H_11) + sqrt(pow(H_00 + H_11, 2) - 4*(H_00*H_11 - pow(H_01, 2))))/2;
+		double eigen2 = ((H_00 + H_11) - sqrt(pow(H_00 + H_11, 2) - 4*(H_00*H_11 - pow(H_01, 2))))/2;
+		// cout << "Eigen values: " << eigen1 << ", " << eigen2 << endl;
+		if (eigen1 > 0 && eigen2 < 0) {
+			H_00 += (-eigen2 + 1.0);
+			H_11 += (-eigen2 + 1.0);
+		}
+		else if (eigen1 < 0 && eigen2 > 0) {
+			H_00 += (-eigen1 + 1.0);
+			H_11 += (-eigen1 + 1.0);
+		}
+		else if (eigen1 < 0 && eigen2 < 0) {
+			double toAdd = eigen1 < eigen2 ? eigen1 : eigen2;
+			H_00 += (-toAdd + 1.0);
+			H_11 += (-toAdd + 1.0);
+		}
+
 		// Check whether the Hessian is positive definite
-		printf("Positive Definite Hessian? : %s\n", isPosDef(H_00, H_01, H_11) ? "true" : "false");
+		// printf("Modified Hessian: \n[[%f, %f],\n [%f, %f]]\n", H_00, H_01, H_01, H_11);
+		// printf("Positive Definite Hessian? : %s\n", isPosDef(H_00, H_01, H_11) ? "true" : "false");
 
 		// Solver of the trust region subproblem, return a step size
-		MyPoint2D step = cg_steihaug(H_00, H_01, H_11, grad_x, grad_y, p, radiusTR);
+		MyPoint2D step = cauchy_point(H_00, H_01, H_11, grad_x, grad_y, radiusTR);
+		// printf("Step: [%f, %f]\n", step.x, step.y);
 
 		// Rho is the evaluation coeff of our trust region
 		double obj_func_val = objectFunc(p), _obj_func_val = objectFunc(p + step);
 		rho = (obj_func_val - _obj_func_val) / (obj_func_val - modelFunc(step, obj_func_val, grad_x, grad_y, H_00, H_01, H_11));
-		cout << "rho: " << rho << endl;
+		// cout << "rho: " << rho << endl;
 
 		if (rho >= ita_v) {
 			// This means our trust region is SUPER good, update iterator p and expand our trust region
 			p = p + step; // I do not overload +=, so just do the old school thing
 			radiusTR = min(tr_upper, miu_xpnd*radiusTR); // Do not exceed the upper bound of trust region
 			distOfTwoIter = step.norm(); // And update the distance between two iterations
-			iterId++;
+			diffFuncVal = abs(_obj_func_val - lastFuncVal)/lastFuncVal;
+			lastFuncVal = _obj_func_val;
 		}
 		else if (rho >= ita_s) {
 			// This means our trust region is good, update iterator p but keep the size of trust region
 			p = p + step;
 			distOfTwoIter = step.norm();
-			iterId++;
+			diffFuncVal = abs(_obj_func_val - lastFuncVal)/lastFuncVal;
+			lastFuncVal = _obj_func_val;
 		}
 		else {
 			// Bad trust region, DO NOT update iterator p and shrink the trust region
 			radiusTR = miu_shrk*radiusTR;
 		}
+		// cout << "Trust Region Radius: " << radiusTR << endl;
+		// cout << "-------" << endl;
 
 		// DO NOT forget to increase your iteration ID!!!!!!
-		// iterId++;
+		iterId++;
+		
 	}
 	iterTimes = iterId;
-	printf("Iteration: %d\n", iterTimes);
-	printf("Function value after iteration: %f\n", objectFunc(p));
-	printf("-------------------------------\n");
+	// printf("Iteration: %d\n", iterTimes);
+	// printf("Function value after iteration: %f\n", objectFunc(p));
+	// printf("-------------------------------\n");
 
 	return p; 
 }
@@ -186,54 +223,84 @@ double Setting2::modelFunc(MyPoint2D point, const double& obj_func_val,
 	return obj_func_val + grad_x*point.x + grad_y*point.y + 0.5*(H00*point.x*point.x + 2*H01*point.x*point.y + H11*point.y*point.y);
 }
 
-bool Setting2::isPosDef(const int& H00, const int& H01, const int& H11) {
-	printf("The det of Hessian: %d\n", H00*H11 - H01*H01);
+bool Setting2::isPosDef(const double& H00, const double& H01, const double& H11) {
+	// printf("The det of Hessian: %f\n", H00*H11 - H01*H01);
 	return H00 > 0 && H11 > 0 && (H00*H11 - H01*H01) > 0;
 }
 
 MyPoint2D Setting2::cg_steihaug(const double& H00, const double& H01, const double& H11, 
-	const double& g0, const double& g1, const MyPoint2D& curX, const double& radius) {
-	double errtol = 1e-5;
-	double d0 = -g0, d1 = -g1;
-	MyPoint2D z = curX;
-	if (g0*g0 + g1*g1 < errtol) return z;
-	int maxit = 50;
-	double r = 0;
-	for (int i = 0; i < maxit; ++i) {
-		double dBd = d0*d0*H00 + 2*d0*d1*H01 + d1*d1*H11;
-		if (dBd <= 0) {
-			double L = sqrt(z.dist_square(curX));
-			r = radius/L;
-			return z + MyPoint2D(d0*r, d1*r);
+	const double& g0, const double& g1, const int& maxit, const double& radiusTR, const double& errtol) {
+	/**
+	* Conjugate Gradient Trust Region Method
+	* double H00, H01, H11: Hessian
+	* double g0, g1: gradient
+	* int maxit: maximum iteration
+	* double radiusTR: trust region radius
+	* double errtol: the tolerance of error
+	*/
+
+	MyPoint2D pp;
+	MyPoint2D r(-g0, -g1);
+	if (r.norm() < errtol) 
+		return pp;
+	MyPoint2D d = r;
+	double grad_norm = sqrt(g0*g0 + g1*g1);
+	int i = 0;
+	double gamma = H00*d.x*d.x + 2*H01*d.x*d.y + H11*d.y*d.y;
+	double alpha = 0, beta = 0;
+
+	while (i < maxit) {
+		if (gamma <= 0) {
+			// Compute tau > 0, s.t. ||pp + tau*d|| = delta
+			double tau = sqrt(pow(radiusTR, 2)/(pow(pp.x + d.x, 2) + pow(pp.y + d.y, 2)));
+			pp.x = pp.x + tau*d.x;
+			pp.y = pp.y + tau*d.y;
+			// cout << "1" << endl;
+			return pp;
 		}
 		else {
-			double grad_m = g0*d0 + g1*d1;
-			r = dummy_gradient_descent(5, grad_m, r);
-			MyPoint2D lastRealGradM(g0+2*H00*z.x+2*H01*z.y, g1+2*H01*z.x+2*H11*z.y);
-			z = z + MyPoint2D(r*d0, r*d1);
-			if (sqrt(z.dist_square(curX)) >= radius) {
-				double L = sqrt(z.dist_square(curX));
-				r = radius/L;
-				return z + MyPoint2D(d0*r, d1*r);
+			alpha = (r.x*r.x + r.y*r.y)/gamma;
+			pp.x = pp.x + alpha*d.x;
+			pp.y = pp.y + alpha*d.y;
+			if (pp.norm() < radiusTR) {
+				MyPoint2D tmp = r;
+				r.x = r.x - alpha*(H00*d.x + H01*d.y);
+				r.y = r.y - alpha*(H01*d.x + H11*d.y);
+				if (r.norm()/grad_norm <= errtol) {
+					// cout << "2" << endl;
+					return pp;
+				}
+				else {
+					beta = (r.x*r.x + r.y*r.y)/(tmp.x*tmp.x + tmp.y*tmp.y);
+					d.x = r.x + beta*d.x;
+					d.y = r.y + beta*d.y;
+					i ++;
+				}
 			}
-			MyPoint2D realGradM(g0+2*H00*z.x+2*H01*z.y, g1+2*H01*z.x+2*H11*z.y);
-			if (realGradM.norm() <= errtol) {
-				return z;
+			else {
+				double tau = sqrt(pow(radiusTR, 2)/(pow(pp.x + d.x, 2) + pow(pp.y + d.y, 2)));
+				pp.x = pp.x + tau*d.x;
+				pp.y = pp.y + tau*d.y;
+				// cout << "tau: " << tau << endl;
+				// cout << "3" << endl;
+				return pp;
 			}
-			double factor = pow(realGradM.norm(), 2)/pow(lastRealGradM.norm(), 2);
-			d0 = -realGradM.x + factor*d0;
-			d1 = -realGradM.y + factor*d1;
-
 		}
+		gamma = H00*d.x*d.x + 2*H01*d.x*d.y + H11*d.y*d.y;
 	}
-	return z;
+	
 }
 
-double Setting2::dummy_gradient_descent(const int& maxit, const double& grad, const double& start) {
-	// double breakdown = 1e-4;
-	double rs = start;
-	for (int i = 0; i < maxit; ++i) {
-		rs -= grad;
+MyPoint2D Setting2::cauchy_point(const double& h00, const double& h01, const double& h11, 
+		const double& gx, const double& gy, const double& radius) {
+	double grad_norm = sqrt(gx*gx + gy*gy);
+	double param = h00*gx*gx + 2*h01*gx*gy + h11*gy*gy;
+	MyPoint2D d = MyPoint2D(-radius*(gx/grad_norm), -radius*(gy/grad_norm));
+	if (param <= 0) 
+		return d;
+	else {
+		double tmp = (pow(grad_norm, 3))/(radius*param);
+		double t = min((double) 1, tmp);
+		return d*t;
 	}
-	return rs;
 }

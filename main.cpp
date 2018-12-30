@@ -18,21 +18,24 @@ void func_10_26();
 void func_11_03(const string& = "line", const bool& = false);
 
 int main() {
-	
-	func_11_03("circle", true);
+	cout << "***********************************" << endl;
+	cout << "* Newton Method Based TDOA Solver *" << endl;
+	cout << "* Author: Hao Wu                  *" << endl;
+	cout << "* Date: 12/27/2018                *" << endl;
+	cout << "***********************************" << endl;
+	func_11_03("circle", false);
 	// func_10_26();
-	
     return 0;
 }
 
 void func_11_03(const string& sensorsDistribution, const bool& isTest) {
-	MyPoint2D realTarget(2.0, 3.0);
+	MyPoint2D realTarget(-1.0, -1.0);
 	vector<MyPoint2D> sensors;
 	srand(200);
 	if (sensorsDistribution == "circle") {
-		double degree = 0;
+		double degree = 0.0;
 		double radius = 7.0;
-		double deltaDegree = 30.0;
+		double deltaDegree = 70.0;
 		for (int i = 0; i < 4; ++i) {
 			double xPolar = radius*cos((degree + deltaDegree*i) * PI / 180.0);
 			double yPolar = radius*sin((degree + deltaDegree*i) * PI / 180.0);
@@ -48,35 +51,38 @@ void func_11_03(const string& sensorsDistribution, const bool& isTest) {
 	}
 	
 	double speed = 340;
-	int iterLimit = 100;
-	double distLimit = 0.000001;
+	int iterLimit = 300;
+	double distLimit = 1e-7;
+	double funcLimit = 1e-7;
 	Setting2 config(sensors, realTarget, speed);
 	config.printSensorsPosition();
-	config.setLimits(iterLimit, distLimit);
+	config.setLimits(iterLimit, distLimit, funcLimit);
 	config.timeCompute();
 	// MyPoint2D start(2.0, 3.0);
 	// config.setStart(start);
-	// MyPoint2D found = config.localize();
+	// MyPoint2D found = config.locate();
 	// printf("%s\n", "----------------------");
 	// printf("Found target at (%f, %f) \n", found.x, found.y);
 	// printf("Iteration times: %d\n", config.iterTimes);
 
 	if (!isTest) {
 		int n_sample = 100;
-		int blocks_x = 5, blocks_y = 5;
-		double b_width = 10/blocks_x, b_height = 10/blocks_y;
+		int blocks_x = 20, blocks_y = 20;
+		double b_width = 40/blocks_x, b_height = 40/blocks_y;
 		MyPoint2D start;
 		vector<MyPoint2D> conv; // Record starting point of converging to real target
 		vector<MyPoint2D> conv_other; // Record convergence point other than real target
 		vector<MyPoint2D> unconv_norm; // Record the diverge starting point
 		vector<MyPoint2D> unconv_other; // Record the starting point of converging to other point
-		for (int i = 0; i < blocks_x; ++i) {
-			for (int j = 0; j < blocks_y; ++j) {
+		for (int i = -10; i < blocks_x-10; ++i) {
+			for (int j = -10; j < blocks_y-10; ++j) {
 				for (int k = 0; k < n_sample; ++k) {
 					start.randomGenerate(i*b_width, i*b_width+b_width, 
 						j*b_height, j*b_height+b_height);
 					config.setStart(start);
-					MyPoint2D found = config.localize();
+					double rhoLower = 0.25, rhoUpper = 0.75, shrinkRatio = 0.25, expandRatio = 2.0, trSize = 6.0;
+					// MyPoint2D found = config.locate();
+    				MyPoint2D found = config.locate_TR(rhoLower, rhoUpper, shrinkRatio, expandRatio, trSize);
 					// cout << config.iterTimes << endl;
 					double error = sqrt(found.dist_square(realTarget))/realTarget.norm();
 					if (error > 0.1) {
@@ -132,12 +138,20 @@ void func_11_03(const string& sensorsDistribution, const bool& isTest) {
 		configRecord.close();
     }
     else {
-    	MyPoint2D start;
-    	srand(time(0));
-    	start.randomGenerate(5, 6);
+    	MyPoint2D start(-7.5, -7.5);
+    	// srand(time(0));
+    	// start.randomGenerate(0, 1, 8, 9);
     	config.setStart(start);
-    	MyPoint2D found = config.locate_TR(0.25, 0.75, 0.25, 2.0, 5.0);
+    	double rhoLower = 0.25, rhoUpper = 0.75, shrinkRatio = 0.25, expandRatio = 2.0, trSize = 5.0;
+    	MyPoint2D found = config.locate_TR(rhoLower, rhoUpper, shrinkRatio, expandRatio, trSize);
+    	ofstream iterRecord;
+    	iterRecord.open("py/iterRecord.csv");
+    	for (auto pp : config.iterations) {
+    		iterRecord << pp.x << ", " << pp.y << endl;
+    	}
+    	iterRecord.close();
     	printf("Target locked at (%f, %f)\n", found.x, found.y);
+    	printf("Iteration times: %d\n", config.iterTimes);
     }
 }
 
@@ -221,7 +235,7 @@ void func_10_19() {
 
 			    // cout << "Real target is at (" << tgt.x << ", " << tgt.y << ")" << endl;
 			    // cout << "Initial point is at (" << setup1.p.x << ", " << setup1.p.y << ")" << endl;
-			    setup1.localize();
+			    setup1.locate();
 			    // cout << "Located target is at (" << setup1.p.x << ", " << setup1.p.y << ")" << endl;
 			   	// cout << "Error: " << sqrt(setup1.p.dist_square(tgt)) / tgt.norm() << endl;
 			    res[i] = sqrt(setup1.p.dist_square(tgt)) / tgt.norm();
@@ -325,7 +339,7 @@ void func_10_26() {
 				start.randomGenerate(i*b_width, i*b_width+b_width, 
 					j*b_height, j*b_height+b_height);
 				config.setInitPoint(start);
-				MyPoint2D found = config.localize();
+				MyPoint2D found = config.locate();
 				double error = sqrt(found.dist_square(real_tgt))/real_tgt.norm();
 				if (error > 0.001) {
 					int n_iter = config.getIterTimes();

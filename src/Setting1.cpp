@@ -47,7 +47,7 @@ double Setting1::timeCompute(MyPoint2D& point, const double& noise) {
 	return dist/c;
 }
 
-MyPoint2D Setting1::localize() {
+MyPoint2D Setting1::locate() {
 	double norm_diff = sqrt(p.dist_square(real_tgt));
 	int iter_id = iter_limit;
 	int n_rcvrs = rcvrs.size();

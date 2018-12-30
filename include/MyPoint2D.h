@@ -9,6 +9,7 @@ class MyPoint2D {
 	    MyPoint2D(const double, const double);
 	    MyPoint2D operator+(const MyPoint2D&);
 	    MyPoint2D operator-(const MyPoint2D&);
+	    MyPoint2D operator*(const double&);
 	    double norm();
 	    double dist_square(MyPoint2D);
 	    void randomGenerate(const double&, const double&);

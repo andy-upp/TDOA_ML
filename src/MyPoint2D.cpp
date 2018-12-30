@@ -27,6 +27,13 @@ MyPoint2D MyPoint2D::operator -(const MyPoint2D& A) {
 	return C;
 }
 
+MyPoint2D MyPoint2D::operator *(const double& num) {
+	MyPoint2D C;
+	C.x = num*x;
+	C.y = num*y;
+	return C;
+}
+
 double MyPoint2D::norm() {
     return sqrt(x*x + y*y);
 }

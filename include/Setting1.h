@@ -29,7 +29,7 @@ public:
 	void setNormLimit(const double&);
 	double timeCompute(MyPoint2D&);
 	double timeCompute(MyPoint2D&, const double&);
-	MyPoint2D localize();
+	MyPoint2D locate();
 	int getIterTimes();
 	double* getHessian();
 };
